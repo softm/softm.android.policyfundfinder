@@ -1,0 +1,40 @@
+# Gradle / Android Studio
+/.gradle/
+/.idea/
+**/build/
+/.externalNativeBuild/
+/.cxx/
+/local.properties
+*.iml
+
+# Release signing and service credentials
+/signing.properties
+*.jks
+*.keystore
+*.p12
+*.pfx
+*.pem
+google-services.json
+.env
+.env.*
+
+# Local operating-system and IDE metadata
+.DS_Store
+.project
+.classpath
+.settings/
+
+# Local agent/tool state
+/.serena/
+/.agents/
+/.codex/
+
+# Legacy source folders retained locally but not used by settings.gradle
+/chipCloud/
+/dot-progress-bar/
+/godwhisper/
+/kata/
+/softmcommon/
+/settings.gradle.kts_
+/gradle/wrapper/settings.gradle.kts
+/work.md

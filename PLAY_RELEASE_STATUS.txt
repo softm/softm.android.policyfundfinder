@@ -1,0 +1,66 @@
+Google Play 프로덕션 배포 상태 (2026-10-14)
+
+앱 정보
+- 앱 이름: 지원한눈 - 정책자금·지원사업
+- 애플리케이션 ID: softm.android.policyfundfinder
+- Play Console 앱 ID: 4973423900889601772
+- 버전: 1.0.0 (versionCode 1)
+- SDK: minSdk 24 / targetSdk 36 / compileSdk 36
+- 운영 주소: https://policyfundfinder.designboard.net/
+- 프로덕션 대상: 대한민국 전체 출시
+
+Android 구현
+- 운영 사이트를 허용된 HTTPS 호스트로 제한한 WebView 하이브리드 앱.
+- 외부 공식 공고와 접수처는 시스템 브라우저로 연결.
+- 공유, JSON 백업 가져오기, 백업·CSV·캘린더 파일 내보내기 지원.
+- INTERNET 권한만 사용하며 광고 SDK, 광고 ID, 위치·저장공간 권한은 포함하지 않음.
+- 앱 내 정부기관 비공식 서비스 고지와 공식 출처 링크 제공.
+
+릴리스 빌드
+- 서명 AAB: app/build/outputs/bundle/release/app-release.aab
+- AAB 크기: 30,497 bytes
+- AAB SHA-256: 0f3f42d092022ffd7df2f53b2b893acb067cc8ebd7903d6539e28ea6bd0f6c1b
+- 서명 APK: app/build/outputs/apk/release/app-release.apk
+- APK 크기: 33,264 bytes
+- APK SHA-256: ddd5b60d5778f4b434a96bf3c81b3996f75cf43aef2693863b34d457ec2e5366
+- AAB 업로드와 Google Play 검증 완료.
+- 비차단 경고: 난독화를 사용하지 않아 R8/ProGuard 매핑 파일이 없음.
+
+Google Play 등록 완료 항목
+- 앱 이름, 간단한 설명, 전체 설명, 아이콘, 1024x500 그래픽, 휴대전화 스크린샷 2장.
+- 카테고리: 비즈니스.
+- 공개 이메일: softm@nate.com.
+- 웹사이트: https://policyfundfinder.designboard.net/.
+- 앱 액세스: 로그인 제한 없음.
+- 광고: 없음.
+- 정부 앱: 아님.
+- 금융 기능: 없음.
+- 건강 기능: 없음.
+- 광고 ID: 사용하지 않음.
+- 타겟층: 만 18세 이상.
+- 콘텐츠 등급: 대한민국 3세 이상 / ESRB Everyone / PEGI 3.
+- 데이터 보안: 호스팅 표준 접속 기록에 따른 기기 또는 기타 식별자 수집을 보수적으로 선언, 제3자 공유 없음, 전송 중 암호화, 계정 생성 없음.
+
+개인정보처리방침 배포
+- 앱·웹 정식 URL: https://policyfundfinder.designboard.net/privacy.html
+- Google Play 전용 URL: https://policyfundfinder.designboard.net/google-play-privacy-policy.html
+- 이전 경로 호환 URL: https://policyfundfinder.designboard.net/public/privacy.html
+- 배포 방식 경합에 대비해 저장소 루트와 public 양쪽에 동일 페이지를 배치함.
+- Google-InspectionTool User-Agent로 루트·public의 일반/Play 전용 네 경로 모두 HTTP 200과 실제 방침 본문 반환 확인.
+- 웹 저장소 최신 배포 커밋: 7876c044175c73a5c8b556039574e9eb1aa7c66b
+- GitHub Pages 사용자 정의 배포와 자동 Jekyll 배포 모두 성공 확인.
+
+Google Play 현재 상태
+- 최초 프로덕션 출시와 필수 등록정보 등 10개 변경사항은 Google 검토 중.
+- 검토 중 항목에는 1.0.0 (1) AAB, 대한민국 전체 출시, 스토어 등록정보, 콘텐츠 등급, 타겟층, 개인정보처리방침, 광고·데이터 보안·건강·카테고리 선언이 포함됨.
+- 개인정보처리방침 고유 URL과 전체 설명 URL 수정 2건은 저장 완료.
+- 수정 2건에 대한 Google 빠른 검사를 새 URL로 다시 실행 중이며 제출 버튼은 활성 상태.
+- 현재 2건을 제출하면 이미 진행 중인 검토가 취소된 뒤 처음부터 다시 시작되어 대기 시간이 늘어난다는 Play Console 경고가 표시됨.
+- 기존 심사는 취소하지 않고 그대로 보존했으며, 수정 2건은 아직 별도 제출하지 않음.
+
+남은 결정
+- 권장: 현재 10건 검토를 유지해 최초 출시 심사를 먼저 완료하고, 고유 URL 수정 2건은 이어서 제출.
+- 대안: 현재 검토를 취소하고 수정 2건까지 포함해 즉시 검토를 처음부터 다시 시작.
+
+검증 제한
+- Gradle 빌드와 lint는 통과했으나 실제 Android 기기 연결 테스트는 수행하지 못함.
