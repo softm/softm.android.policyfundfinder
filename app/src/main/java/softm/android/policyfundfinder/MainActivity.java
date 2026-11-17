@@ -24,6 +24,7 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Button;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -32,8 +33,10 @@ import android.widget.Toast;
 import org.json.JSONObject;
 
 import java.io.OutputStream;
+import softm.hannun.update.HannunInAppUpdateManager;
 
 public class MainActivity extends Activity {
+    private static final long EXIT_AD_WAIT_TIMEOUT_MS = 5_000L;
     private static final String HOME = "https://policyfundfinder.designboard.net/";
     private static final String TRUSTED_HOST = "policyfundfinder.designboard.net";
     private static final int FILE_CHOOSER_REQUEST = 10;
@@ -46,10 +49,13 @@ public class MainActivity extends Activity {
     private AlertDialog exitDialog;
     private ValueCallback<Uri[]> fileChooserCallback;
     private PendingDownload pendingDownload;
+    private CommonNativeAds ads;
+    private HannunInAppUpdateManager appUpdater;
 
     @Override
     public void onCreate(Bundle state) {
         super.onCreate(state);
+        appUpdater = new HannunInAppUpdateManager(this, null);
         getWindow().setStatusBarColor(0xff087d6b);
         getWindow().setNavigationBarColor(Color.WHITE);
 
@@ -89,10 +95,14 @@ public class MainActivity extends Activity {
 
         web = new WebView(this);
         root.addView(web, new LinearLayout.LayoutParams(-1, 0, 1));
+        LinearLayout adHost = new LinearLayout(this);
+        root.addView(adHost, new LinearLayout.LayoutParams(-1, -2));
         setContentView(root);
 
         configureWebView();
         if (state == null || web.restoreState(state) == null) web.loadUrl(HOME);
+        ads = new CommonNativeAds(this, adHost);
+        ads.start();
 
         if (Build.VERSION.SDK_INT >= 33) {
             getOnBackInvokedDispatcher().registerOnBackInvokedCallback(
@@ -118,7 +128,7 @@ public class MainActivity extends Activity {
         settings.setMediaPlaybackRequiresUserGesture(true);
         settings.setSupportMultipleWindows(true);
         settings.setJavaScriptCanOpenWindowsAutomatically(false);
-        settings.setUserAgentString(settings.getUserAgentString() + " PolicyFundFinderAndroid/1");
+        settings.setUserAgentString(settings.getUserAgentString() + " PolicyFundFinderAndroid/1 AdMobNative/1");
         if (Build.VERSION.SDK_INT >= 26) settings.setSafeBrowsingEnabled(true);
 
         CookieManager.getInstance().setAcceptThirdPartyCookies(web, false);
@@ -355,6 +365,7 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (appUpdater.onActivityResult(requestCode, resultCode)) return;
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == FILE_CHOOSER_REQUEST && fileChooserCallback != null) {
             fileChooserCallback.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(resultCode, data));
@@ -377,28 +388,65 @@ public class MainActivity extends Activity {
 
     private void handleBack() {
         if (exitDialog != null && exitDialog.isShowing()) return;
-        if (web.canGoBack()) {
-            web.goBack();
-            return;
-        }
+        FrameLayout adSlot = new FrameLayout(this);
+        adSlot.setMinimumWidth(dp(300));
+        adSlot.setMinimumHeight(dp(250));
+        LinearLayout loading = new LinearLayout(this);
+        loading.setOrientation(LinearLayout.VERTICAL);
+        loading.setGravity(android.view.Gravity.CENTER);
+        ProgressBar loadingProgress = new ProgressBar(this);
+        loading.addView(loadingProgress, new LinearLayout.LayoutParams(dp(44), dp(44)));
+        TextView loadingText = new TextView(this);
+        loadingText.setText("광고를 불러오는 중입니다.");
+        loadingText.setTextColor(0xff626d7c);
+        loadingText.setTextSize(14);
+        loadingText.setPadding(0, dp(12), 0, 0);
+        loading.addView(loadingText, new LinearLayout.LayoutParams(-2, -2));
+        adSlot.addView(loading, new FrameLayout.LayoutParams(-1, dp(250)));
         exitDialog = new AlertDialog.Builder(this)
             .setTitle("앱을 종료하시겠습니까?")
             .setMessage("지원한눈을 종료하고 홈 화면으로 돌아갑니다.")
+            .setView(adSlot)
             .setNegativeButton("계속 이용", null)
             .setPositiveButton("종료", (dialog, which) -> finish())
             .create();
-        exitDialog.setOnDismissListener(dialog -> exitDialog = null);
+        android.os.Handler timeoutHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+        Runnable enableExit = () -> {
+            if (exitDialog == null || !exitDialog.isShowing()) return;
+            exitDialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(true);
+        };
+        exitDialog.setOnShowListener(dialog -> {
+            Button exitButton = exitDialog.getButton(AlertDialog.BUTTON_POSITIVE);
+            exitButton.setEnabled(false);
+            boolean waiting = ads != null && ads.attachExitBannerAd(adSlot, () -> {
+                timeoutHandler.removeCallbacks(enableExit);
+                if (adSlot.getChildCount() == 0) adSlot.setVisibility(View.GONE);
+                enableExit.run();
+            });
+            if (waiting) {
+                timeoutHandler.postDelayed(enableExit, EXIT_AD_WAIT_TIMEOUT_MS);
+            } else {
+                adSlot.removeAllViews();
+                adSlot.setVisibility(View.GONE);
+                exitButton.setEnabled(true);
+            }
+        });
+        exitDialog.setOnDismissListener(dialog -> {
+            timeoutHandler.removeCallbacks(enableExit);
+            if (ads != null) ads.onExitDialogDismissed(adSlot);
+            exitDialog = null;
+        });
         exitDialog.show();
+    }
+
+    private int dp(int value) {
+        return Math.round(value * getResources().getDisplayMetrics().density);
     }
 
     @Override
     @SuppressWarnings("deprecation")
     public void onBackPressed() {
-        if (Build.VERSION.SDK_INT >= 33) {
-            super.onBackPressed();
-        } else {
-            handleBack();
-        }
+        handleBack();
     }
 
     @Override
@@ -409,6 +457,7 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onPause() {
+        appUpdater.onPause();
         web.onPause();
         super.onPause();
     }
@@ -416,11 +465,14 @@ public class MainActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
+        appUpdater.onResume();
         web.onResume();
     }
 
     @Override
     protected void onDestroy() {
+        appUpdater.destroy();
+        if (ads != null) ads.destroy();
         if (fileChooserCallback != null) fileChooserCallback.onReceiveValue(null);
         if (exitDialog != null) {
             exitDialog.setOnDismissListener(null);
