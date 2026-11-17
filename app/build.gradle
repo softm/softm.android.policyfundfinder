@@ -4,6 +4,11 @@ def signingFile = rootProject.file('signing.properties')
 if (signingFile.exists()) {
     signingFile.withInputStream { releaseSigning.load(it) }
 }
+
+dependencies {
+    implementation 'com.google.android.gms:play-services-ads:25.5.0'
+    implementation 'com.google.android.ump:user-messaging-platform:4.0.0'
+}
 android {
     namespace 'softm.android.policyfundfinder'
     compileSdk 36
@@ -11,8 +16,8 @@ android {
         applicationId 'softm.android.policyfundfinder'
         minSdk 24
         targetSdk 36
-        versionCode 1
-        versionName '1.0.0'
+        versionCode 3
+        versionName '1.0.2'
     }
     compileOptions { sourceCompatibility JavaVersion.VERSION_1_8; targetCompatibility JavaVersion.VERSION_1_8 }
     signingConfigs {
@@ -31,6 +36,10 @@ android {
             signingConfig signingConfigs.release
         }
     }
+}
+
+dependencies {
+    implementation 'com.github.softm:hannun-in-app-update-android:1.0.0'
 }
 
 // 서명 설정 누락 시 미서명 산출물을 배포하지 않도록 중단합니다.
